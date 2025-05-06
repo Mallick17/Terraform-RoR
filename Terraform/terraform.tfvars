@@ -1,0 +1,13 @@
+launch_type         = "EC2"
+project_name        = "ror-ecs-project"
+instance_type       = "t3.medium"
+key_name            = "Myops"
+ami_id              = "ami-08fe5144e4659a3b3"
+subnet_ids          = ["subnet-0738b2e70f37fe442", "subnet-04cf194b656ad564e", "subnet-03b17848527227137"]
+security_group_ids  = ["sg-0a35e9086b143cac5", "sg-0106a2994ff8e49aa"]
+instance_profile_name = "ecsInstanceProfile"
+environment         = "dev"
+source_repo         = "https://github.com/Mallick17/ROR-AWS-ECS"
+buildspec           = "buildspec.yml"
+artifact_bucket_name = "codepipeline-ap-south-1-7417d7b4a8e3-4a7d-b09d-2028b1076a80"
+artifact_bucket_arn  = "arn:aws:s3:::codepipeline-ap-south-1-7417d7b4a8e3-4a7d-b09d-2028b1076a80"
