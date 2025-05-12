@@ -170,3 +170,91 @@ terraform apply -target=module.ecr
 
 ---
 
+Absolutely! Here's a **detailed line-by-line explanation** of each section of your AWS CodeBuild Terraform script, in the same style and format you're using:
+
+---
+
+```hcl
+resource "aws_codebuild_project" "this" {         ## we are using AWS CodeBuild service to define a build project
+  name          = var.project_name                ## project name is pulled from a variable defined in variables.tf
+  description   = "CodeBuild project for ECS-deployed Ruby on Rails app"  ## optional description to clarify purpose
+  build_timeout = 20                              ## maximum duration a build can run is set to 20 minutes (after which it will timeout)
+  service_role  = var.codebuild_service_role_arn  ## IAM role ARN that gives CodeBuild permissions to access AWS resources like S3, ECR, etc.
+```
+
+---
+
+```hcl
+  artifacts {
+    type = "NO_ARTIFACTS"                         ## specifies that this build does not produce any artifacts (e.g., zip, .jar, etc.)
+                                                  ## this is typically used when you're pushing images or using external tools instead
+  }
+```
+
+---
+
+```hcl
+  environment {
+    compute_type     = "BUILD_GENERAL1_SMALL"     ## allocates small compute resources: 3 vCPUs, 3 GB RAM
+                                                  ## other options: MEDIUM (7 GB), LARGE (15 GB) depending on build requirements
+
+    image            = "aws/codebuild/standard:7.0" ## uses AWS-managed Docker image (version 7.0) with pre-installed runtimes/tools
+                                                  ## includes languages like Python, Node.js, Java, Docker, etc.
+
+    type             = "LINUX_CONTAINER"          ## defines the OS type of the environment container; here, it’s a Linux-based container
+
+    privileged_mode  = true                       ## enables Docker-in-Docker functionality (needed for building and pushing Docker images)
+                                                  ## if false, Docker commands inside the buildspec will fail
+```
+
+---
+
+```hcl
+    environment_variable {
+      name  = "REPOSITORY_URI"                    ## defines a custom environment variable used in the build process
+      value = var.ecr_repository_url              ## its value is pulled from a variable; typically the target Amazon ECR repo URL
+    }
+  }
+```
+
+---
+
+```hcl
+  source {
+    type            = "GITHUB"                    ## specifies that the source code is hosted on GitHub
+    location        = var.github_repo_url         ## the URL of the GitHub repository is defined via a variable
+    git_clone_depth = 1                           ## performs a shallow clone of just the latest commit to speed up the build
+    buildspec       = var.buildspec_path          ## path to the buildspec.yml file which defines build phases and commands
+  }
+```
+
+---
+
+```hcl
+  source_version = var.source_version             ## allows you to specify a specific Git branch, tag, or commit ID to build from
+}
+```
+
+---
+
+```hcl
+resource "null_resource" "trigger_codebuild_build" {  ## helper resource to trigger a CodeBuild build automatically
+  triggers = {
+    always_run = timestamp()                     ## ensures this resource always changes by setting a unique timestamp
+                                                  ## this triggers the local-exec provisioner on every `terraform apply`
+  }
+
+  provisioner "local-exec" {
+    command = "aws codebuild start-build --project-name ${aws_codebuild_project.this.name} --region ap-south-1"
+                                                  ## uses AWS CLI to start a new build for the specified CodeBuild project
+                                                  ## ensure AWS CLI is installed and configured locally where Terraform is running
+  }
+
+  depends_on = [aws_codebuild_project.this]       ## ensures that the CodeBuild project is created before trying to trigger a build
+}
+```
+
+---
+
+
+
